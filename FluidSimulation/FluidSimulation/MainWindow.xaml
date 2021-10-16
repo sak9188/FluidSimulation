@@ -7,8 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="1200" Width="1200">
     <Grid >
-        <Canvas Name="DrawCanvas" Height="1000" Width="1000">
-        <Ellipse Width="10" Height="10" Fill="Black" Canvas.Left="10" Canvas.Bottom="10"></Ellipse>
+        <Canvas Name="DrawCanvas" Height="1000" Width="1000" Background="CadetBlue">
         </Canvas>
     </Grid>
 </Window>

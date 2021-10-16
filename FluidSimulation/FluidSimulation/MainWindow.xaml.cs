@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,10 +30,12 @@ namespace FluidSimulation
             InitDrawCanvas();
 
             timer.Tick += TimeStep;
-            timer.Interval = new TimeSpan(0,0,1);
+            timer.Interval = new TimeSpan(0,0,0,0,Convert.ToInt32(timeStep * 1000));
             timer.Start();
         }
 
+        public List<Particle> allParticle = new List<Particle>();
+        public readonly Vector gravity = new Vector(0, -0.98d);
         private void InitDrawCanvas()
         {
             //DrawCanvas.VerticalAlignment = VerticalAlignment.Top;
@@ -41,8 +44,9 @@ namespace FluidSimulation
             // 初始化粒子
             uint particleNum = 50;
 
-            double x = 0, y = 0;
+            double x = 0, y = 500;
             double radius = 2.5;
+            y += radius;
             double diameter = radius * 2;
 
             for (int i = 0; i < particleNum; i++)
@@ -52,14 +56,14 @@ namespace FluidSimulation
                 {
                     var e = new Particle(x, y, radius)
                     {
-                        Fill = Brushes.CadetBlue
+                        Fill = Brushes.DarkKhaki
                     };
 
-                    e.SetPosition(x, y);
-                    Canvas.SetBottom(e, y);
-                    Canvas.SetLeft(e, x);
-                    DrawCanvas.Children.Add(e);
+                    allParticle.Add(e);
 
+                    e.SetPosition(x, y);
+
+                    DrawCanvas.Children.Add(e);
                     x += diameter;
                 }
                 y += diameter;
@@ -67,13 +71,53 @@ namespace FluidSimulation
         }
 
         // 时间步长
-        private readonly double timeStep = 0.1;
+        private readonly double timeStep = 0.016;
+        // 目标帧数
+        private readonly int frames = 1000;
 
+        private int curFrames = 0;
+
+        private Rect wallRect = new Rect(0, 0, 1000, 1000);
         private void TimeStep(object sender, EventArgs e)
         {
-            //Console.WriteLine(sender.ToString());
+            if (curFrames > frames)
+            {
+                return;
+            }
 
-            // 给所有的粒子增加一个重力
+            curFrames += 1;
+
+            // 添加重力
+            foreach (var particle in allParticle)
+            {
+                particle.Force = gravity; 
+                particle.PredictPosition(timeStep);
+                particle.SetPosition(particle.Position + particle.NextPosition);
+
+            }
+
+            // 计算pi 和 碰撞检测
+            foreach (var particle in allParticle)
+            {
+                // 这里不计算pi
+                // 碰撞检测
+                
+                // 先给墙增加刚体
+                if(particle.Position.X <= 0 || particle.Position.Y <= 0)
+                {
+                    // 说明撞上墙了， 因为时间的步长足够小，可以判断这个粒子应该是在墙的边界
+                    
+                }
+            }
+
+            foreach (var particle in allParticle)
+            {
+                // 更新速度
+                // 施加速度限制，和粘力
+                // 更新位置
+            }
+
+
         }
 
     }

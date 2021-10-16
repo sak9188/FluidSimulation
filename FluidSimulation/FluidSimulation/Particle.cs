@@ -98,7 +98,15 @@ namespace FluidSimulation
             position.X = x;
             position.Y = y;
 
-            // this._rect
+            Canvas.SetLeft(this, x);
+            Canvas.SetBottom(this, y);
+        }
+
+        public void SetPosition(Vector vector)
+        {
+            position = vector;
+            Canvas.SetLeft(this, vector.X);
+            Canvas.SetBottom(this, vector.Y);
         }
 
         private Vector velocity = new Vector(0, 0);
@@ -129,6 +137,13 @@ namespace FluidSimulation
             {
                 force = value;
             }
+        }
+
+        public Vector NextPosition;
+        public void PredictPosition(double time)
+        {
+            var posOffset = 0.5 * force * Math.Pow(time, 2) + velocity * time;
+            NextPosition += posOffset;
         }
     }
 }
