@@ -10,7 +10,7 @@ using System.Windows.Shapes;
 
 namespace FluidSimulation
 {
-    public class Particle : Shape
+    public class Particle : Shape, ICollidable
     {
         private Rect _rect = Rect.Empty;
         static Particle() => Shape.StretchProperty.OverrideMetadata(typeof (Particle), (PropertyMetadata) new FrameworkPropertyMetadata((object) Stretch.Fill));
@@ -98,8 +98,8 @@ namespace FluidSimulation
             position.X = x;
             position.Y = y;
 
-            Canvas.SetLeft(this, x);
-            Canvas.SetBottom(this, y);
+            Canvas.SetLeft(this, x-this.radius);
+            Canvas.SetBottom(this, y-this.radius);
         }
 
         public void SetPosition(Vector vector)
@@ -144,6 +144,28 @@ namespace FluidSimulation
         {
             var posOffset = 0.5 * force * Math.Pow(time, 2) + velocity * time;
             NextPosition += posOffset;
+        }
+
+
+        public Rect GetCollideShape()
+        {
+            // 这里需要返回一个碰撞矩形
+            Rect rect = new Rect();
+
+            // 左下为坐标系原点
+            // xy 就是中心原点, 高宽就是半径
+
+            rect.X = this.Position.X;
+            rect.Y = this.Position.Y;
+            rect.Width = this.radius;
+            rect.Height = this.radius;
+
+            return rect;
+        }
+
+        public bool IsMovable()
+        {
+            return true;
         }
     }
 }

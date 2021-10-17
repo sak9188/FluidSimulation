@@ -51,7 +51,7 @@ namespace FluidSimulation
 
             for (int i = 0; i < particleNum; i++)
             {
-                x = 0;
+                x = radius;
                 for (int j = 0; j < particleNum; j++)
                 {
                     var e = new Particle(x, y, radius)
@@ -105,20 +105,22 @@ namespace FluidSimulation
                 // 先给墙增加刚体
                 if(particle.Position.X <= 0 || particle.Position.Y <= 0)
                 {
-                    // 说明撞上墙了， 因为时间的步长足够小，可以判断这个粒子应该是在墙的边界
-                    
+                    // 说明撞上墙了，因为时间的步长足够小，可以判断这个粒子应该是在墙的边界
                 }
+
+                
             }
 
             foreach (var particle in allParticle)
             {
                 // 更新速度
+                particle.Velocity += gravity * timeStep;
+                
                 // 施加速度限制，和粘力
+
                 // 更新位置
+                
             }
-
-
         }
-
     }
 }
