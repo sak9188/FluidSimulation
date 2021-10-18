@@ -12,12 +12,33 @@ namespace FluidSimulation
 
         public void CollisionCalculate(IList<ICollidable> list)
         {
-           // 这里需要一个八叉树算法
-           
+            // 这里需要一个八叉树算法 TODO
+
+            foreach (var collidable in list)
+            {
+                // ON^2
+                foreach (var collidableNext in list)
+                {
+                    // 这里其实做了简化, 因为目前只有一个约束
+                    // 那就是位置不能穿透
+
+                    // 判断这两个是否发生了碰撞
+                    if(IsCollide(collidable, collidableNext))
+                    {
+                        // 如果在当前速度下
+
+                    }
+                }    
+            }
         }
 
         public bool IsCollide(ICollidable collide, ICollidable collideNext)
         {
+            if (collide == collideNext)
+            {
+                return false;
+            }
+
             var collideShape = collide.GetCollideShape();
 
             var collideNextShape = collideNext.GetCollideShape();

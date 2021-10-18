@@ -139,11 +139,14 @@ namespace FluidSimulation
             }
         }
 
-        public Vector NextPosition;
+        public Vector NextPositionOffset;
         public void PredictPosition(double time)
         {
-            var posOffset = 0.5 * force * Math.Pow(time, 2) + velocity * time;
-            NextPosition += posOffset;
+            velocity += force * time;
+            // 因为目前只有重力, 后面需要有其他力对速度进行修正
+            var posOffset = velocity * time;
+            // Next position offset
+            NextPositionOffset = posOffset;
         }
 
 
@@ -155,8 +158,9 @@ namespace FluidSimulation
             // 左下为坐标系原点
             // xy 就是中心原点, 高宽就是半径
 
-            rect.X = this.Position.X;
-            rect.Y = this.Position.Y;
+            rect.X = this.Position.X + NextPositionOffset.X;
+            rect.Y = this.Position.Y + NextPositionOffset.Y;
+
             rect.Width = this.radius;
             rect.Height = this.radius;
 

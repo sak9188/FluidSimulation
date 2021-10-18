@@ -87,13 +87,22 @@ namespace FluidSimulation
 
             curFrames += 1;
 
+            // PBD Position Based Dynamics
+            // 1. 初始化所有粒子(点Vertices的速度)
+            // 2. 计算每个粒子的的每个时间步长的速度
+            // 3. 计算下个位置
+            // 4. 对每个粒子生成碰撞约束
+            // 5. 根据每个约束,反向求解粒子的位置 修正位置
+            // 6. 对所有的粒子的位置进行修正, 反向计算速度
+            // 7. 更新位置, 更新速度
+
             // 添加重力
             foreach (var particle in allParticle)
             {
                 particle.Force = gravity; 
                 particle.PredictPosition(timeStep);
-                particle.SetPosition(particle.Position + particle.NextPosition);
 
+                // particle.SetPosition(particle.Position + particle.NextPosition);
             }
 
             // 计算pi 和 碰撞检测
@@ -102,12 +111,8 @@ namespace FluidSimulation
                 // 这里不计算pi
                 // 碰撞检测
                 
-                // 先给墙增加刚体
-                if(particle.Position.X <= 0 || particle.Position.Y <= 0)
-                {
-                    // 说明撞上墙了，因为时间的步长足够小，可以判断这个粒子应该是在墙的边界
-                }
-
+                // 这里暂时使用O(N^2)的方法
+                
                 
             }
 
