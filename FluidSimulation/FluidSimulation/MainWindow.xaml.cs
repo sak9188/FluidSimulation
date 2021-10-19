@@ -100,6 +100,10 @@ namespace FluidSimulation
 
         private readonly int MaxIteration = 5;
 
+        private double restDensity = 1;
+
+        private double relaxScaler = 1;
+
         private void TimeStep(object sender, EventArgs e)
         {
             if (curFrames > frames)
@@ -160,13 +164,20 @@ namespace FluidSimulation
                     // 密度约束
                     // Ci = rol_i/rol_0 - 1 = 0
                     // rol_i = sum(J, mj, KernalFunction)
+                    double rol_i = 0;
+                    double pkc = 0;
                     foreach (var particleNeighborParticle in particle.NeighborParticles)
                     {
-                        var rol_i = KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighborParticle.NextPosition,
+                        var kenalGradValue = KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighborParticle.NextPosition,
                             particle.Radius * 2);
-                        
-                        var rol_0 = 
+;
+                        rol_i += kenalGradValue;
+                        pkc += Math.Pow(kenalGradValue, 2);
                     }
+
+                    var c_i = rol_i - 1;
+                    var lambda = -c_i / (pkc + 1);
+
 
                     // 计算det_p
                     // 计算碰撞
