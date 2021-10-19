@@ -12,6 +12,8 @@ namespace FluidSimulation
 {
     public class Particle : Shape, ICollidable
     {
+        public HashSet<Particle> NeighborParticles = new HashSet<Particle>();
+
         private Rect _rect = Rect.Empty;
         static Particle() => Shape.StretchProperty.OverrideMetadata(typeof (Particle), (PropertyMetadata) new FrameworkPropertyMetadata((object) Stretch.Fill));
 
@@ -139,16 +141,15 @@ namespace FluidSimulation
             }
         }
 
-        public Vector NextPositionOffset;
+        public Vector NextPosition;
         public void PredictPosition(double time)
         {
             velocity += force * time;
             // 因为目前只有重力, 后面需要有其他力对速度进行修正
             var posOffset = velocity * time;
             // Next position offset
-            NextPositionOffset = posOffset;
+            NextPosition = this.position + posOffset;
         }
-
 
         public Rect GetCollideShape()
         {
@@ -157,9 +158,6 @@ namespace FluidSimulation
 
             // 左下为坐标系原点
             // xy 就是中心原点, 高宽就是半径
-
-            rect.X = this.Position.X + NextPositionOffset.X;
-            rect.Y = this.Position.Y + NextPositionOffset.Y;
 
             rect.Width = this.radius;
             rect.Height = this.radius;

@@ -12,5 +12,7 @@ namespace FluidSimulation
         // DCi = F(W(Pi, Pk))
         // DCi = W(Pi, Pk)
         // DC = f(2x) 2x 
+
+        // 
     }
 }

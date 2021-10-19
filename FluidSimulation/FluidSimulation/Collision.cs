@@ -48,5 +48,11 @@ namespace FluidSimulation
 
             return substruction.Length < collideNextShape.Width;
         }
+        
+        // 空间哈希算法 O(N)
+        public void NeighborhoodSearch()
+        {
+            // 领域粒子搜索
+        }
     }
 }

@@ -35,6 +35,11 @@ namespace FluidSimulation
         }
 
         public List<Particle> allParticle = new List<Particle>();
+
+        // 长宽都是1000, 1000, 单个格子的长度为10, 总计 100*100
+        public const int SpaceStep = 10;
+        public Dictionary<int, HashSet<Particle>> SpaceDict;
+
         public readonly Vector gravity = new Vector(0, -0.98d);
         private void InitDrawCanvas()
         {
@@ -62,7 +67,21 @@ namespace FluidSimulation
                     allParticle.Add(e);
 
                     e.SetPosition(x, y);
+                    // 设置空间映射
+                    var xPos = Convert.ToInt32(x / SpaceStep);
+                    var yPos = Convert.ToInt32(y / SpaceStep);
 
+                    var key = xPos + yPos * 100;
+                    HashSet<Particle> set = null;
+                    if (SpaceDict.TryGetValue(key, out set))
+                    {
+                        set.Add(e);
+                    }
+                    {
+                        SpaceDict[key] = new HashSet<Particle>() { e };
+                    }
+
+                    
                     DrawCanvas.Children.Add(e);
                     x += diameter;
                 }
@@ -78,6 +97,9 @@ namespace FluidSimulation
         private int curFrames = 0;
 
         private Rect wallRect = new Rect(0, 0, 1000, 1000);
+
+        private readonly int MaxIteration = 5;
+
         private void TimeStep(object sender, EventArgs e)
         {
             if (curFrames > frames)
@@ -105,15 +127,51 @@ namespace FluidSimulation
                 // particle.SetPosition(particle.Position + particle.NextPosition);
             }
 
-            // 计算pi 和 碰撞检测
+            // 找到所有的临边
             foreach (var particle in allParticle)
             {
-                // 这里不计算pi
-                // 碰撞检测
-                
-                // 这里暂时使用O(N^2)的方法
-                 
-                
+                // 找到所有的相邻的粒子
+                // 因为我这里的默认半径是2.5, 所以我觉得光滑核半径应该是半径的两倍
+                var xGridPos = Convert.ToInt32(particle.NextPosition.X / SpaceStep);
+                var yGridPos = Convert.ToInt32(particle.NextPosition.X / SpaceStep);
+
+                HashSet<Particle> allJoinParticles = new HashSet<Particle>();
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        HashSet<Particle> hashSet;
+                        if (SpaceDict.TryGetValue(xGridPos + yGridPos * 100, out hashSet))
+                        {
+                            allJoinParticles.UnionWith(hashSet);
+                        }
+                    }
+                }
+
+                particle.NeighborParticles = allJoinParticles;
+            }
+
+
+            for (int i = 0; i < MaxIteration; i++)
+            {
+                // 计算lambda
+                foreach (var particle in allParticle)
+                {
+                    // 密度约束
+                    // Ci = rol_i/rol_0 - 1 = 0
+                    // rol_i = sum(J, mj, KernalFunction)
+                    foreach (var particleNeighborParticle in particle.NeighborParticles)
+                    {
+                        var rol_i = KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighborParticle.NextPosition,
+                            particle.Radius * 2);
+                        
+                        var rol_0 = 
+                    }
+
+                    // 计算det_p
+                    // 计算碰撞
+                    // 更新位置
+                }
             }
 
             foreach (var particle in allParticle)
