@@ -104,6 +104,8 @@ namespace FluidSimulation
 
         private double relaxScaler = 1;
 
+        private double k_small_positive = -0.01;
+
         private void TimeStep(object sender, EventArgs e)
         {
             if (curFrames > frames)
@@ -165,19 +167,36 @@ namespace FluidSimulation
                     // Ci = rol_i/rol_0 - 1 = 0
                     // rol_i = sum(J, mj, KernalFunction)
                     double rol_i = 0;
+                    foreach (var particleNeighbor in particle.NeighborParticles)
+                    {
+                        rol_i += KernelFunction.Poly6Kernel(particleNeighbor.Position - particle.Position,
+                            particle.Radius * 2);
+                    }
+                    
+                    var c_i = rol_i - 1;
+
                     double pkc = 0;
+                    
+                    // 这里存储着有关lambda_j所需的模长
+                    List<double> list_lambda_j = new List<double>();
+                    List<double> list_grad_j = new List<double>();
                     foreach (var particleNeighborParticle in particle.NeighborParticles)
                     {
-                        var kenalGradValue = KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighborParticle.NextPosition,
+                        var kenalGradValue = KernelFunction.SpikyKernelGrad(particle.NextPosition - particleNeighborParticle.NextPosition,
                             particle.Radius * 2);
 ;
-                        rol_i += kenalGradValue;
-                        pkc += Math.Pow(kenalGradValue, 2);
+                        var c_pk = Math.Pow(kenalGradValue, 2);
+                        pkc += c_pk; 
+                        list_lambda_j.Add(-c_i / (c_pk + relaxScaler));
+                        list_grad_j.Add(kenalGradValue);
                     }
 
-                    var c_i = rol_i - 1;
-                    var lambda = -c_i / (pkc + 1);
+                    var lambda_i = -c_i / (pkc + relaxScaler);
 
+                    // var s_corr = - k_small_positive * Math.Pow()
+
+                    // var lambda_j = -c_i / (pkc + relaxScaler);
+                    
 
                     // 计算det_p
                     // 计算碰撞
