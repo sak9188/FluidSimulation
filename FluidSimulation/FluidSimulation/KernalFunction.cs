@@ -60,7 +60,7 @@ namespace FluidSimulation
             double h6 = Math.Pow(h, 6);
             if(length <= h)
             {
-                return 15 / Math.PI * h6 * Math.Pow(h - length, 3);
+                return 15 / (Math.PI * h6 ) * Math.Pow(h - length, 3);
             }
             {
                 return 0;

@@ -144,9 +144,9 @@ namespace FluidSimulation
         public Vector NextPosition;
         public void PredictPosition(double time)
         {
-            velocity += force * time;
             // 因为目前只有重力, 后面需要有其他力对速度进行修正
-            var posOffset = velocity * time;
+            var posOffset = velocity * time + force * 0.5 * Math.Pow(time, 2);
+            velocity += force * time;
             // Next position offset
             NextPosition = this.position + posOffset;
         }
@@ -164,6 +164,8 @@ namespace FluidSimulation
 
             return rect;
         }
+
+        public double lambda_multiplyer = 0;
 
         public bool IsMovable()
         {

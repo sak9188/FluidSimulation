@@ -3,6 +3,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,19 +31,19 @@ namespace FluidSimulation
             InitDrawCanvas();
 
             timer.Tick += TimeStep;
-            timer.Interval = new TimeSpan(0,0,0,0,Convert.ToInt32(timeInterval * 1000));
+            timer.Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(timeInterval * 1000));
             timer.Start();
         }
 
         public List<Particle> allParticle = new List<Particle>();
 
         // 长宽都是1000, 1000, 单个格子的长度为10, 总计 100*100
-        public const int SpaceStep = 10;
+        public const int SpaceStep = 100;
         public Dictionary<int, HashSet<Particle>> SpaceDict = new Dictionary<int, HashSet<Particle>>();
 
-        private static double radius = 3;
+        private static double radius = 7;
         private static double diameter = radius * 2;
-        private static double kernalRadius = diameter * 4;
+        private static double kernalRadius = diameter * 2;
 
         public readonly Vector gravity = new Vector(0, -9.8d);
         private void InitDrawCanvas()
@@ -51,7 +52,7 @@ namespace FluidSimulation
             //DrawCanvas.HorizontalAlignment = HorizontalAlignment.Left;
 
             // 初始化粒子
-            uint particleNum = 25;
+            uint particleNum = 20;
 
             double x = 0, y = 500;
             for (int i = 0; i < particleNum; i++)
@@ -66,13 +67,13 @@ namespace FluidSimulation
 
                     allParticle.Add(e);
 
-                    e.Force = gravity; 
+                    e.Force = gravity;
                     e.SetPosition(x, y);
                     // 设置空间映射
                     var xPos = Convert.ToInt32(x / SpaceStep);
                     var yPos = Convert.ToInt32(y / SpaceStep);
 
-                    var key = xPos + yPos * 100;
+                    var key = xPos + yPos * 8;
                     HashSet<Particle> set = null;
                     if (SpaceDict.TryGetValue(key, out set))
                     {
@@ -83,7 +84,7 @@ namespace FluidSimulation
                         SpaceDict[key] = new HashSet<Particle>() { e };
                     }
 
-                    
+
                     DrawCanvas.Children.Add(e);
                     x += diameter;
                 }
@@ -99,18 +100,18 @@ namespace FluidSimulation
                 {
                     var e = new Particle(x, y, radius)
                     {
-                        Fill = Brushes.BlueViolet
+                        Fill = Brushes.DarkKhaki
                     };
 
                     allParticle.Add(e);
 
-                    e.Force = gravity; 
+                    e.Force = gravity;
                     e.SetPosition(x, y);
                     // 设置空间映射
                     var xPos = Convert.ToInt32(x / SpaceStep);
                     var yPos = Convert.ToInt32(y / SpaceStep);
 
-                    var key = xPos + yPos * 100;
+                    var key = xPos + yPos * 8;
                     HashSet<Particle> set = null;
                     if (SpaceDict.TryGetValue(key, out set))
                     {
@@ -121,7 +122,7 @@ namespace FluidSimulation
                         SpaceDict[key] = new HashSet<Particle>() { e };
                     }
 
-                    
+
                     DrawCanvas.Children.Add(e);
                     x += diameter;
                 }
@@ -135,32 +136,23 @@ namespace FluidSimulation
         // 时间步长
         private readonly double timeInterval = 0.016;
 
-        private readonly double timeStep = 0.1;
+        private readonly double timeStep = 0.05;
         // 目标帧数
         private readonly int frames = 100000;
 
         private int curFrames = 0;
 
-        private readonly int MaxIteration = 10;
+        private readonly int MaxIteration = 6;
 
-        private double relaxScaler = 0.01;
+        private double relaxScaler = 0.001;
 
-        private double k_small_positive = -0.1;
+        private double k_small_positive = -0.01;
 
         private double density_0 = 1 / Math.Pow(diameter, 2);
 
-        List<double> list_lambda_j = new List<double>();
-        List<double> list_real_j = new List<double>();
-        List<Vector> list_grad_j = new List<Vector>();
-
         private void TimeStep(object sender, EventArgs e)
         {
-            if (curFrames > frames)
-            {
-                return;
-            }
-
-            curFrames += 1;
+            //timer.Stop();
 
             // 添加重力
             foreach (var particle in allParticle)
@@ -187,10 +179,10 @@ namespace FluidSimulation
                         {
                             foreach (var particle1 in hashSet)
                             {
-                                if(particle1 == particle)
+                                if (particle1 == particle)
                                     continue;
 
-                                if((particle1.Position - particle.Position).Length <= kernalRadius)
+                                if ((particle1.NextPosition - particle.NextPosition).Length <= kernalRadius)
                                 {
                                     allJoinParticles.Add(particle1);
                                 }
@@ -216,87 +208,94 @@ namespace FluidSimulation
                     foreach (var particleNeighbor in particle.NeighborParticles)
                     {
                         rol_i += KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.NextPosition,
-                            particle.Diameter);
+                            kernalRadius);
                     }
-                    
-                    var c_i = rol_i / density_0 - 1;
 
-                    var constraintPos = particle.NextPosition;
+                    var c_i = rol_i / density_0 - 1;
 
                     if (c_i > 0)
                     {
-                        double pkc = 0;
-                        // 这里存储着有关lambda_j所需的模长
-                        list_lambda_j.Clear();
-                        list_real_j.Clear();
-                        list_grad_j.Clear();
-
+                        Vector grad_i = new Vector();
+                        double sum_grad_j = 0;
                         foreach (var particleNeighborParticle in particle.NeighborParticles)
                         {
-                            var offset = particle.NextPosition - particleNeighborParticle.NextPosition;
-                            var kernelValue = KernelFunction.SpikyKernel(offset, kernalRadius);
-                            var kernelGradValue = -KernelFunction.SpikyKernelGrad(offset, kernalRadius);
-                            ;
-                            var c_pk = Math.Pow(kernelGradValue.Length, 2);
-                            pkc += c_pk;
-                            list_lambda_j.Add(-c_i / (c_pk / Math.Pow(density_0, 2) + relaxScaler));
-                            list_real_j.Add(kernelValue);
-                            list_grad_j.Add(kernelGradValue);
-                        }
-                        var lambda_i = -c_i / (pkc / density_0 + relaxScaler);
-
-                        Vector det_p = new Vector();
-
-                        for (int j = 0; j < list_lambda_j.Count; j++)
-                        {
-                            var lambda_j = list_lambda_j[j];
-                            var grad_j = list_grad_j[j];
-
-                            var real_j = list_real_j[j];
-                            var read_q = KernelFunction.SpikyKernel(0.2 * kernalRadius, kernalRadius);
-
-                            var scorr = -k_small_positive * Math.Pow(real_j / read_q, 4);
-
-                            det_p += (((lambda_i + lambda_j + scorr) * grad_j) / density_0);
+                            var grad_j = KernelFunction.SpikyKernelGrad(
+                                particle.NextPosition - particleNeighborParticle.NextPosition, kernalRadius);
+                            grad_i += grad_j;
+                            sum_grad_j += Math.Pow((-grad_j / density_0).Length, 2);
                         }
 
-                        // 这里我设置以墙为碰撞体
-                        constraintPos += det_p;
-                    } 
-                    
-                    // 计算碰撞
-                    if (constraintPos.X - particle.Radius < 0)
-                        constraintPos.X += particle.Radius;
-                    else if (constraintPos.X + particle.Radius > 1000)
-                        constraintPos.X = 2000 - constraintPos.X;
+                        sum_grad_j += Math.Pow(grad_i.Length / density_0, 2);
+                        particle.lambda_multiplyer = -c_i / (sum_grad_j + relaxScaler);
+                    }
+                    else
+                    {
+                        particle.lambda_multiplyer = 0;
+                    }
+                }
 
-                    if (constraintPos.Y - particle.Radius < 0)
-                        constraintPos.Y += particle.Radius;
-                    else if (constraintPos.Y + particle.Radius > 1000)
-                        constraintPos.Y = 2000 - constraintPos.Y;
+                // 计算det_p
+                foreach (var particle in allParticle)
+                {
+                    Vector det_p = new Vector();
+                    foreach (var particleNeighborParticle in particle.NeighborParticles)
+                    {
+                        double scorr = -k_small_positive *
+                                       Math.Pow(
+                                           KernelFunction.SpikyKernel(particle.NextPosition -
+                                                                      particleNeighborParticle.NextPosition, kernalRadius)
+                                           / KernelFunction.SpikyKernel(0.2 * kernalRadius, kernalRadius), 4);
 
-                     // 更新位置
-                    particle.NextPosition = constraintPos;
+                        det_p += (particle.lambda_multiplyer + particleNeighborParticle.lambda_multiplyer + scorr) *
+                            KernelFunction.SpikyKernelGrad(
+                                particle.NextPosition - particleNeighborParticle.NextPosition, kernalRadius);
+                    }
+
+                    particle.NextPosition += det_p / density_0;
+
+                    if (particle.NextPosition.X <= 0)
+                        particle.NextPosition.X = radius;
+                    else if (particle.NextPosition.X >= 800)
+                        particle.NextPosition.X = 800;
+
+                    if (particle.NextPosition.Y <= 0)
+                        particle.NextPosition.Y = radius;
+                    else if (particle.NextPosition.Y >= 800)
+                        particle.NextPosition.Y = 800;
                 }
             }
 
+            Vector allVelocity = new Vector();
             foreach (var particle in allParticle)
             {
                 // 更新速度
                 particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
                 // 加入旋度
+                // 
                 // 粘度
+                Vector v_ij;
+                Vector sum = new Vector();
+                foreach (var particleNeighborParticle in particle.NeighborParticles)
+                {
+                    v_ij = particle.Velocity - particleNeighborParticle.Velocity;
+                    v_ij *= KernelFunction.SpikyKernel(particle.NextPosition - particleNeighborParticle.NextPosition,
+                        kernalRadius) * 0.1;
+                    sum += v_ij;
+                }
+                particle.Velocity += sum;
+
+                allVelocity += particle.Velocity;
                 // 更新位置
                 var oldKey = GetSpaceDictKey(particle.Position);
                 var newKey = GetSpaceDictKey(particle.NextPosition);
                 particle.SetPosition(particle.NextPosition);
 
-                if(oldKey != newKey)
+                if (oldKey != newKey)
                 {
                     // 设置空间映射
                     var treeSet = SpaceDict[oldKey];
-                    treeSet.Remove(particle); 
-                    
+                    treeSet.Remove(particle);
+
                     HashSet<Particle> set;
                     if (SpaceDict.TryGetValue(newKey, out set))
                     {
@@ -306,8 +305,13 @@ namespace FluidSimulation
                     {
                         SpaceDict[newKey] = new HashSet<Particle>() { particle };
                     }
+
                 }
             }
+
+            Console.WriteLine(allVelocity.Length);
+
+            //timer.Start();
         }
 
         public static int GetSpaceDictKey(Vector vector)
@@ -315,7 +319,7 @@ namespace FluidSimulation
             var xPos = Convert.ToInt32(vector.X / SpaceStep);
             var yPos = Convert.ToInt32(vector.Y / SpaceStep);
 
-            return xPos + yPos * 100;
+            return xPos + yPos * 8;
         }
     }
 }
