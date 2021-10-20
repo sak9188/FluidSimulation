@@ -64,7 +64,7 @@ namespace FluidSimulation
             double length = radius.Length;
             double h4 = Math.Pow(h, 4);
 
-            if (length<= h)
+            if (0 < length && length<= h)
             {
                 return -45 / (Math.PI * h4) * Math.Pow(1 - length / h, 2) * (radius / length);
             }

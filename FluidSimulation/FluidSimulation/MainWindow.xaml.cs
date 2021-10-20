@@ -77,6 +77,7 @@ namespace FluidSimulation
                     {
                         set.Add(e);
                     }
+                    else
                     {
                         SpaceDict[key] = new HashSet<Particle>() { e };
                     }
@@ -92,7 +93,7 @@ namespace FluidSimulation
         // 时间步长
         private readonly double timeInterval = 0.016;
 
-        private readonly double timeStep = 0.1;
+        private readonly double timeStep = 0.05;
         // 目标帧数
         private readonly int frames = 1000;
 
@@ -139,7 +140,7 @@ namespace FluidSimulation
                 // 找到所有的相邻的粒子
                 // 因为我这里的默认半径是2.5, 所以我觉得光滑核半径应该是半径的两倍
                 var xGridPos = Convert.ToInt32(particle.NextPosition.X / SpaceStep);
-                var yGridPos = Convert.ToInt32(particle.NextPosition.X / SpaceStep);
+                var yGridPos = Convert.ToInt32(particle.NextPosition.Y / SpaceStep);
 
                 HashSet<Particle> allJoinParticles = new HashSet<Particle>();
                 for (int i = 0; i < 3; i++)
@@ -147,7 +148,7 @@ namespace FluidSimulation
                     for (int j = 0; j < 3; j++)
                     {
                         HashSet<Particle> hashSet;
-                        if (SpaceDict.TryGetValue(xGridPos + yGridPos * 100, out hashSet))
+                        if (SpaceDict.TryGetValue(xGridPos + j + (yGridPos + i) * 100, out hashSet))
                         {
                             allJoinParticles.UnionWith(hashSet);
                         }
@@ -163,14 +164,15 @@ namespace FluidSimulation
                 // 计算lambda
                 foreach (var particle in allParticle)
                 {
+
                     // 密度约束
                     // Ci = rol_i/rol_0 - 1 = 0
                     // rol_i = sum(J, mj, KernalFunction)
                     double rol_i = 0;
                     foreach (var particleNeighbor in particle.NeighborParticles)
                     {
-                        rol_i += KernelFunction.Poly6Kernel(particleNeighbor.Position - particle.Position,
-                            particle.Radius * 2);
+                        rol_i += KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.NextPosition,
+                            particle.Diameter);
                     }
                     
                     var c_i = rol_i - 1;
@@ -185,7 +187,7 @@ namespace FluidSimulation
                     {
                         var offset = particle.NextPosition - particleNeighborParticle.NextPosition;
                         var kernelValue = KernelFunction.SpikyKernel(offset, particle.Diameter);
-                        var kernelGradValue = KernelFunction.SpikyKernelGrad(offset,particle.Radius * 2);
+                        var kernelGradValue = KernelFunction.SpikyKernelGrad(offset,particle.Diameter);
 ;
                         var c_pk = Math.Pow(kernelGradValue.Length, 2);
                         pkc += c_pk; 
@@ -225,6 +227,7 @@ namespace FluidSimulation
                         constraintPos.Y = particle.Radius;
                     else if (constraintPos.Y + particle.Radius > 1000)
                         constraintPos.Y = 1000 - particle.Radius;
+                    
 
                     // 更新位置
                     particle.NextPosition = constraintPos;
@@ -236,17 +239,8 @@ namespace FluidSimulation
                 // 更新速度
                 particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
                 // 加入旋度，粘度
-                if (double.IsNaN(particle.NextPosition.X) || double.IsNaN(particle.NextPosition.Y))
-                {
-                    int test_point = 0;
-                }
                 // 更新位置
                 var oldKey = GetSpaceDictKey(particle.Position);
-
-                if(oldKey == 2424)
-                {
-                    int test_poiint = 0;
-                }
                 var newKey = GetSpaceDictKey(particle.NextPosition);
                 particle.SetPosition(particle.NextPosition);
 
@@ -261,6 +255,7 @@ namespace FluidSimulation
                     {
                         set.Add(particle);
                     }
+                    else
                     {
                         SpaceDict[newKey] = new HashSet<Particle>() { particle };
                     }
