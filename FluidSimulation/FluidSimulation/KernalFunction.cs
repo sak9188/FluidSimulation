@@ -13,12 +13,20 @@ namespace FluidSimulation
         public static double Poly6Kernel(Vector radius, double h)
         {
             double length = radius.Length;
-            double q = length / h;
-            double h3 = Math.Pow(h, 3);
+            return Poly6Kernel(length, 6);
+        }
+
+        public static double Poly6Kernel(double radius, double h)
+        {
+
+            double length = radius;
+            double r2 = Math.Pow(length, 2);
+            double h2 = Math.Pow(h, 2);
+            double h9 = Math.Pow(h, 9);
 
             if (length <= h)
             {
-                return 315 / (64 * Math.PI * h3) * Math.Pow((1 - Math.Pow(q, 2)), 3);
+                return 315 / (64 * Math.PI * h9) * Math.Pow((h2 - r2), 3);
             }
             {
                 return 0;
@@ -36,7 +44,7 @@ namespace FluidSimulation
                 return -945 * length / (32 * Math.PI * h5) * Math.Pow((1 - q2), 2);
             }
             {
-                return 0;
+                return 0;// var  = length * v1 * Math.Cos(Vector.AngleBetween(offset, v1))) ;
             }
         }
 
