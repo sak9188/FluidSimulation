@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -39,17 +40,36 @@ namespace FluidSimulation
             }
         }
 
-        public static double SpikyKernelGrad(Vector radius, double h)
+        public static double SpikyKernel(Vector radius, double h)
+        {
+            double length = radius.Length;
+            return SpikyKernel(length, h);
+        }
+
+        public static double SpikyKernel(double radius, double h)
+        {
+            double length = radius;
+            double h6 = Math.Pow(h, 6);
+            if(length <= h)
+            {
+                return 15 / Math.PI * h6 * Math.Pow(h - length, 3);
+            }
+            {
+                return 0;
+            }
+        }
+
+        public static Vector SpikyKernelGrad(Vector radius, double h)
         {
             double length = radius.Length;
             double h4 = Math.Pow(h, 4);
 
             if (length<= h)
             {
-                return -45 / (Math.PI * h4) * Math.Pow(1 - length / h, 2);
+                return -45 / (Math.PI * h4) * Math.Pow(1 - length / h, 2) * (radius / length);
             }
             {
-                return 0;
+                return new Vector(0,0);
             }
         }
     }

@@ -107,8 +107,8 @@ namespace FluidSimulation
         public void SetPosition(Vector vector)
         {
             position = vector;
-            Canvas.SetLeft(this, vector.X);
-            Canvas.SetBottom(this, vector.Y);
+            Canvas.SetLeft(this, vector.X - this.radius);
+            Canvas.SetBottom(this, vector.Y - this.radius);
         }
 
         private Vector velocity = new Vector(0, 0);
