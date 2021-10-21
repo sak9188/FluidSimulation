@@ -106,7 +106,7 @@ namespace FluidSimulation
         private Vector position = new Vector(0, 0);
 
         public Vector Position => this.position;
-
+        public bool IsSolid = false;
         public void SetPosition(double x, double y)
         {
             position.X = x;
@@ -157,8 +157,8 @@ namespace FluidSimulation
         public void PredictPosition(double time)
         {
             // 因为目前只有重力, 后面需要有其他力对速度进行修正
-            var posOffset = velocity * time + force * 0.5 * Math.Pow(time, 2);
             velocity += force * time;
+            var posOffset = velocity * time;
             // Next position offset
             NextPosition = this.position + posOffset;
         }

@@ -36,14 +36,15 @@ namespace FluidSimulation
         }
 
         public List<Particle> allParticle = new List<Particle>();
+        public List<Particle> fluidParticle = new List<Particle>();
 
         // 长宽都是1000, 1000, 单个格子的长度为10, 总计 100*100
         public const int SpaceStep = 10;
         public Dictionary<int, HashSet<Particle>> SpaceDict = new Dictionary<int, HashSet<Particle>>();
 
-        private static double radius = 2.5;
+        private static double radius = 4;
         private static double diameter = radius * 2;
-        private static double kernalRadius = diameter * 4;
+        private static double kernalRadius = diameter * 2;
 
         public readonly Vector gravity = new Vector(0, -9.8d);
         private void InitDrawCanvas()
@@ -52,14 +53,14 @@ namespace FluidSimulation
             //DrawCanvas.HorizontalAlignment = HorizontalAlignment.Left;
 
             // 初始化粒子
-            uint particleNum = 50;
+            uint particleNum = 2;
 
             double x = 0, y = 100;
             int index = 0;
 
             for (int i = 0; i < particleNum; i++)
             {
-                x = 2.5;
+                x = 25;
                 for (int j = 0; j < particleNum; j++)
                 {
                     var e = new Particle(x, y, radius)
@@ -69,7 +70,7 @@ namespace FluidSimulation
                     e.index = index;
                     index++;
                     allParticle.Add(e);
-
+                    fluidParticle.Add(e);
                     e.Force = gravity;
                     e.SetPosition(x, y);
                     // 设置空间映射
@@ -86,15 +87,152 @@ namespace FluidSimulation
                     {
                         SpaceDict[key] = new HashSet<Particle>() { e };
                     }
-
-                    
-
                     DrawCanvas.Children.Add(e);
                     x += diameter;
                 }
                 y += diameter;
             }
 
+            // 加入边界粒子
+            y = 0;
+            for (int i = 0; i < 2; i++)
+            {
+                x = 0;
+                for (int j = 0; j < 800/diameter; j++)
+                {
+                    var e = new Particle(x, y, radius)
+                    {
+                        Fill = Brushes.Black
+                    };
+
+                    e.SetPosition(x, y);
+                    e.IsSolid = true;
+
+                    allParticle.Add(e);
+                    // 设置空间映射
+                    var xPos = Convert.ToInt32(x / SpaceStep);
+                    var yPos = Convert.ToInt32(y / SpaceStep);
+
+                    var key = xPos + yPos * 80;
+                    HashSet<Particle> set = null;
+                    if (SpaceDict.TryGetValue(key, out set))
+                    {
+                        set.Add(e);
+                    }
+                    else
+                    {
+                        SpaceDict[key] = new HashSet<Particle>() { e };
+                    }
+                    DrawCanvas.Children.Add(e);
+                    x += diameter;
+                }
+                y += diameter;
+            }
+
+            y = 800;
+            for (int i = 0; i < 2; i++)
+            {
+                x = 0;
+                for (int j = 0; j < 800/diameter; j++)
+                {
+                    var e = new Particle(x, y, radius)
+                    {
+                        Fill = Brushes.Black
+                    };
+
+                    e.SetPosition(x, y);
+                    e.IsSolid = true;
+
+                    allParticle.Add(e);
+                    // 设置空间映射
+                    var xPos = Convert.ToInt32(x / SpaceStep);
+                    var yPos = Convert.ToInt32(y / SpaceStep);
+
+                    var key = xPos + yPos * 80;
+                    HashSet<Particle> set = null;
+                    if (SpaceDict.TryGetValue(key, out set))
+                    {
+                        set.Add(e);
+                    }
+                    else
+                    {
+                        SpaceDict[key] = new HashSet<Particle>() { e };
+                    }
+                    DrawCanvas.Children.Add(e);
+                    x += diameter;
+                }
+                y -= diameter;
+            }
+
+            y = 0;
+            for (int i = 0; i < 2; i++)
+            {
+                x = 0;
+                for (int j = 0; j < 800/diameter; j++)
+                {
+                    var e = new Particle(y, x, radius)
+                    {
+                        Fill = Brushes.Black
+                    };
+
+                    e.SetPosition(y, x);
+                    e.IsSolid = true;
+
+                    allParticle.Add(e);
+                    // 设置空间映射
+                    var xPos = Convert.ToInt32(y / SpaceStep);
+                    var yPos = Convert.ToInt32(x / SpaceStep);
+
+                    var key = xPos + yPos * 80;
+                    HashSet<Particle> set = null;
+                    if (SpaceDict.TryGetValue(key, out set))
+                    {
+                        set.Add(e);
+                    }
+                    else
+                    {
+                        SpaceDict[key] = new HashSet<Particle>() { e };
+                    }
+                    DrawCanvas.Children.Add(e);
+                    x += diameter;
+                }
+                y += diameter;
+            }
+
+            y = 800 - diameter;
+            for (int i = 0; i < 2; i++)
+            {
+                x = 0;
+                for (int j = 0; j < 800/diameter; j++)
+                {
+                    var e = new Particle(y, x, radius)
+                    {
+                        Fill = Brushes.Black
+                    };
+
+                    e.SetPosition(y, x);
+                    e.IsSolid = true;
+
+                    allParticle.Add(e);
+                    // 设置空间映射
+                    var xPos = Convert.ToInt32(y / SpaceStep);
+                    var yPos = Convert.ToInt32(x / SpaceStep);
+
+                    var key = xPos + yPos * 80;
+                    HashSet<Particle> set;
+                    if (SpaceDict.TryGetValue(key, out set))
+                    {
+                        set.Add(e);
+                    }
+                    else
+                    {
+                        SpaceDict[key] = new HashSet<Particle>() { e };
+                    }
+                    DrawCanvas.Children.Add(e);
+                    x += diameter;
+                }
+                y -= diameter;
+            }
 
             // y = 500;
             // for (int i = 0; i < particleNum; i++)
@@ -152,7 +290,7 @@ namespace FluidSimulation
 
         private double k_small_positive = -0.01;
 
-        private double density_0 = 1 / Math.Pow(diameter, 2);
+        private double density_0 = 0.1 / Math.Pow(diameter, 2);
 
         private void TimeStep(object sender, EventArgs e)
         {
@@ -161,6 +299,11 @@ namespace FluidSimulation
             // 添加重力
             foreach (var particle in allParticle)
             {
+                if (particle.IsSolid)
+                {
+                    particle.PredictPosition(0);
+                    continue;
+                }
                 particle.PredictPosition(timeStep);
                 // particle.SetPosition(particle.Position + particle.NextPosition);// 更新位置
                 var oldKey = GetSpaceDictKey(particle.Position);
@@ -221,20 +364,26 @@ namespace FluidSimulation
             for (int i = 0; i < MaxIteration; i++)
             {
                 // 计算lambda
-                foreach (var particle in allParticle)
+                foreach (var particle in fluidParticle)
                 {
 
                     // 密度约束
                     // Ci = rol_i/rol_0 - 1 = 0
                     // rol_i = sum(J, mj, KernalFunction)
                     double rol_i = 0;
-                    var test = particle.index;
                     //Console.WriteLine( "CurParticleIndex:{0}", particle.index);
                     foreach (var particleNeighbor in particle.NeighborParticles)
                     {
                         //Console.WriteLine("NeibhorParticle:{0}", particleNeighbor.index);
-                        rol_i += KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.NextPosition,
+                        if (particleNeighbor.IsSolid)
+                        {
+                            rol_i += density_0;
+                        }
+                        else
+                        {
+                            rol_i += KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.NextPosition,
                             kernalRadius);
+                        }
                     }
 
                     var c_i = rol_i / density_0 - 1;
@@ -261,7 +410,7 @@ namespace FluidSimulation
                 }
 
                 // 计算det_p
-                foreach (var particle in allParticle)
+                foreach (var particle in fluidParticle)
                 {
                     Vector det_p = new Vector();
                     foreach (var particleNeighborParticle in particle.NeighborParticles)
@@ -282,17 +431,10 @@ namespace FluidSimulation
             }
 
             Vector allVelocity = new Vector();
-            foreach (var particle in allParticle)
+            foreach (var particle in fluidParticle)
             {
                 // 更新速度
                 particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
-
-                if (particle.NextPosition.X <= 0 || particle.NextPosition.X >= 800)
-                    particle.velocity.X = -particle.Velocity.X;
-
-                if (particle.NextPosition.Y <= 0 || particle.NextPosition.Y >= 800)
-                    particle.velocity.Y = -particle.Velocity.Y;
-
                 // 加入旋度
                 // 
                 // 粘度

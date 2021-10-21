@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FluidSimulation"
         mc:Ignorable="d"
-        Title="MainWindow" Height="840" Width="820">
+        Title="MainWindow" Height="940" Width="920">
     <Grid >
         <Canvas Name="DrawCanvas" Height="800" Width="800" Background="CadetBlue">
         </Canvas>
