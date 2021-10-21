@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace FluidSimulation
 {
     public class Particle : Shape, ICollidable
     {
+
+        public int index = 0;
         public HashSet<Particle> NeighborParticles = new HashSet<Particle>();
 
         private Rect _rect = Rect.Empty;
@@ -62,6 +65,14 @@ namespace FluidSimulation
                 return;
             Pen pen = this.GetPen();
             drawingContext.DrawGeometry(this.Fill, pen, (Geometry) new EllipseGeometry(this._rect));
+            //drawingContext.DrawText(
+            //   new FormattedText(this.index.ToString(),
+            //      CultureInfo.GetCultureInfo("en-us"),
+            //      FlowDirection.LeftToRight,
+            //      new Typeface("Microsoft Yahei"),
+            //      this.radius, Brushes.Black),
+            //      new Point(_rect.X, _rect.Y));
+
         }
 
         private double radius;
@@ -74,6 +85,7 @@ namespace FluidSimulation
             position.Y = y;
             this.radius = radius;
             this._rect = new Rect(new Size(this.Diameter, this.Diameter));
+            
         }
 
         public double Radius
@@ -111,7 +123,7 @@ namespace FluidSimulation
             Canvas.SetBottom(this, vector.Y - this.radius);
         }
 
-        private Vector velocity = new Vector(0, 0);
+        public Vector velocity = new Vector(0, 0);
 
         public Vector Velocity
         {
