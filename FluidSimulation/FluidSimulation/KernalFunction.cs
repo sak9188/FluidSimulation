@@ -13,7 +13,7 @@ namespace FluidSimulation
         public static double Poly6Kernel(Vector radius, double h)
         {
             double length = radius.Length;
-            return Poly6Kernel(length, 6);
+            return Poly6Kernel(length, h);
         }
 
         public static double Poly6Kernel(double radius, double h)

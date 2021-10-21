@@ -65,13 +65,13 @@ namespace FluidSimulation
                 return;
             Pen pen = this.GetPen();
             drawingContext.DrawGeometry(this.Fill, pen, (Geometry) new EllipseGeometry(this._rect));
-            //drawingContext.DrawText(
-            //   new FormattedText(this.index.ToString(),
-            //      CultureInfo.GetCultureInfo("en-us"),
-            //      FlowDirection.LeftToRight,
-            //      new Typeface("Microsoft Yahei"),
-            //      this.radius, Brushes.Black),
-            //      new Point(_rect.X, _rect.Y));
+            drawingContext.DrawText(
+               new FormattedText(this.index.ToString(),
+                  CultureInfo.GetCultureInfo("en-us"),
+                  FlowDirection.LeftToRight,
+                  new Typeface("Microsoft Yahei"),
+                  this.Diameter, Brushes.Black),
+                  new Point(_rect.X, _rect.Y));
 
         }
 
@@ -183,5 +183,8 @@ namespace FluidSimulation
         {
             return true;
         }
+
+        public Vector Delt_p = new Vector();
+        public double property = 0.0f;
     }
 }
