@@ -31,7 +31,7 @@ namespace FluidSimulation
             InitDrawCanvas();
 
             timer.Tick += TimeStep;
-            timer.Interval = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(timeInterval * 1000));
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 16);
             timer.Start();
         }
 
@@ -45,7 +45,7 @@ namespace FluidSimulation
 
         private static double radius = 10;
         private static double diameter = radius * 2;
-        private static double kernalRadius = diameter * 4;
+        private static double kernalRadius = diameter * 2;
 
         public readonly Vector gravity = new Vector(0, -9.8d);
         private void InitDrawCanvas()
@@ -54,7 +54,7 @@ namespace FluidSimulation
             //DrawCanvas.HorizontalAlignment = HorizontalAlignment.Left;
 
             // 初始化粒子
-            uint particleNum = 1;
+            uint particleNum = 10;
 
             double x = 0, y = 100;
             int index = 0;
@@ -279,41 +279,42 @@ namespace FluidSimulation
             foreach (var particle in solidParticle)
             {
                 var mk = density_0 * 2;
-                var sum_ml = relaxScaler;
+                var sum_ml = KernelFunction.Poly6Kernel(0, kernalRadius);
                 foreach (var particleNeighborParticle in particle.NeighborParticles)
                 {
                     if (!particleNeighborParticle.IsSolid)
                         continue;
 
-                    sum_ml += 2 * KernelFunction.SpikyKernel(particle.Position - particleNeighborParticle.Position,
-                        kernalRadius);
+                    sum_ml += 2 * KernelFunction.Poly6Kernel((particle.Position - particleNeighborParticle.Position) / scaler,
+                        kernalRadius / scaler);
                 }
 
-                particle.property = mk * density_0 / sum_ml;
+                particle.property = mk / sum_ml;
             }
 
         }
 
         // 时间步长
-        private readonly double timeInterval = 0.016;
-
-        private readonly double timeStep = 0.1;
-        // 目标帧数
-        private readonly int frames = 100000;
-
-        private int curFrames = 0;
+        private double scaler = 3;
 
         private readonly int MaxIteration = 5;
 
-        private double relaxScaler = 0.01;
+        private static double relaxScaler = 0.000001;
 
-        private double k_small_positive = -0.01;
+        private double k_small_positive = -0.001;
 
-        private double density_0 = 1 / Math.Pow(radius, 2);
+        private double density_0 = 1000 / (Math.PI * Math.Pow(radius, 2));
+
+        static Vector maxSpeed = new Vector(relaxScaler, relaxScaler);
 
         private void TimeStep(object sender, EventArgs e)
         {
-            //timer.Stop();
+            timer.Stop();
+            // 求出最大时间步长
+            double timeStep = diameter * 0.4 / maxSpeed.Length;
+
+            timeStep = Math.Min(timeStep, 0.005);
+            timeStep = Math.Max(timeStep, 0.00001);
 
             // 添加重力
             foreach (var particle in allParticle)
@@ -324,6 +325,8 @@ namespace FluidSimulation
                     continue;
                 }
                 particle.PredictPosition(timeStep);
+                if (particle.Velocity.Length > maxSpeed.Length)
+                    maxSpeed = particle.Velocity;
                 // particle.SetPosition(particle.Position + particle.NextPosition);// 更新位置
             }
 
@@ -362,7 +365,7 @@ namespace FluidSimulation
             {
 
                 // 计算lambda
-                foreach (var particle in fluidParticle)
+                foreach (var particle in allParticle)
                 {
 
                     // 密度约束
@@ -373,15 +376,15 @@ namespace FluidSimulation
                     foreach (var particleNeighbor in particle.NeighborParticles)
                     {
                         //Console.WriteLine("NeibhorParticle:{0}", particleNeighbor.index);
+                        var value = KernelFunction.Poly6Kernel((particle.NextPosition - particleNeighbor.NextPosition)/scaler,
+                            kernalRadius/scaler);
                         if (particleNeighbor.IsSolid)
                         {
-                            rol_i += particleNeighbor.property * KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.Position,
-                            kernalRadius);
+                            rol_i += particleNeighbor.property * value;
                         }
                         else
                         {
-                            rol_i += KernelFunction.Poly6Kernel(particle.NextPosition - particleNeighbor.NextPosition,
-                            kernalRadius);
+                            rol_i += 1 * value;
                         }
                     }
 
@@ -397,28 +400,19 @@ namespace FluidSimulation
                             Vector grad_j;
                             if (particleNeighborParticle.IsSolid)
                             {
-                                grad_j = particleNeighborParticle.property * KernelFunction.SpikyKernelGrad(
-                                    particle.NextPosition - particleNeighborParticle.NextPosition, kernalRadius);
-                                if (double.IsNaN(grad_j.X))
-                                {
-                                    int i = 0;
-                                }
+                                grad_j = particleNeighborParticle.property / density_0 * KernelFunction.SpikyKernelGrad(
+                                    (particle.NextPosition - particleNeighborParticle.NextPosition)/scaler, kernalRadius / scaler);
                             }
                             else
                             {
-                                grad_j = KernelFunction.SpikyKernelGrad(
-                                particle.NextPosition - particleNeighborParticle.NextPosition, kernalRadius);
-
-                                if (double.IsNaN(grad_j.X))
-                                {
-                                    int i = 0;
-                                }
+                                grad_j = 1 / density_0 * KernelFunction.SpikyKernelGrad(
+                                (particle.NextPosition - particleNeighborParticle.NextPosition)/scaler, kernalRadius/scaler);
                             }
                             grad_i += grad_j;
-                            sum_grad_j += Math.Pow((-grad_j / density_0).Length, 2);
+                            sum_grad_j += Math.Pow((-grad_j).Length, 2);
                         }
 
-                        sum_grad_j += Math.Pow(grad_i.Length / density_0, 2);
+                        sum_grad_j += Math.Pow(grad_i.Length, 2);
                         particle.lambda_multiplyer = -c_i / (sum_grad_j + relaxScaler);
 }
                     else
@@ -438,13 +432,13 @@ namespace FluidSimulation
                     {
                         double scorr = -k_small_positive *
                                        Math.Pow(
-                                           KernelFunction.SpikyKernel(particle.NextPosition -
-                                                                      particleNeighborParticle.NextPosition, kernalRadius)
-                                           / KernelFunction.SpikyKernel(0.2 * kernalRadius, kernalRadius), 4);
+                                           KernelFunction.SpikyKernel((particle.NextPosition -
+                                                                      particleNeighborParticle.NextPosition)/scaler, kernalRadius/scaler)
+                                           / KernelFunction.SpikyKernel(0.2 * kernalRadius/scaler, kernalRadius/scaler), 4);
 
                         det_p += (particle.lambda_multiplyer + particleNeighborParticle.lambda_multiplyer + scorr) *
                             KernelFunction.SpikyKernelGrad(
-                                particle.NextPosition - particleNeighborParticle.NextPosition, kernalRadius);
+                                (particle.NextPosition - particleNeighborParticle.NextPosition)/scaler, kernalRadius/scaler);
                         if (double.IsNaN(det_p.X))
                         {
                             int i = 0;
@@ -455,8 +449,8 @@ namespace FluidSimulation
 
                 foreach (var particle in fluidParticle)
                 {
-                    particle.NextPosition += particle.Delt_p; 
-
+                    particle.NextPosition += particle.Delt_p;
+                    particle.Delt_p = new Vector();
                 }
             }
 
@@ -505,6 +499,7 @@ namespace FluidSimulation
             }
 
             //Console.WriteLine(allVelocity.Length);
+            timer.Start();
         }
 
         public static int GetSpaceDictKey(Vector vector)
