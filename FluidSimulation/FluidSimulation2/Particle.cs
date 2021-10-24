@@ -7,17 +7,15 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace FluidSimulation
+namespace FluidSimulation2
 {
-    public class Particle : Shape, ICollidable
+    public class Particle : Shape
     {
-
-        public int index = 0;
-        public HashSet<Particle> NeighborParticles = new HashSet<Particle>();
-
         private Rect _rect = Rect.Empty;
+
         static Particle() => Shape.StretchProperty.OverrideMetadata(typeof (Particle), (PropertyMetadata) new FrameworkPropertyMetadata((object) Stretch.Fill));
 
         public override Geometry RenderedGeometry => this.DefiningGeometry;
@@ -35,7 +33,6 @@ namespace FluidSimulation
             finalSize.Height = radius;
             return finalSize;
         }
-
         protected override Geometry DefiningGeometry =>
             this._rect.IsEmpty ? Geometry.Empty : (Geometry) new EllipseGeometry(this._rect);
 
@@ -75,18 +72,42 @@ namespace FluidSimulation
 
         }
 
-        private double radius;
-
-        public double Diameter => radius * 2;
-
-        public Particle(double x, double y, double radius=2.5)
+        private int index;
+        public int Index
         {
-            position.X = x;
-            position.Y = y;
-            this.radius = radius;
-            this._rect = new Rect(new Size(this.Diameter, this.Diameter));
-            
+            get
+            {
+                return index;
+            }
+            set
+            {
+                index = value;
+            }
         }
+
+        private HashSet<Particle> neighbor = new HashSet<Particle>();
+
+        public HashSet<Particle> Neighbor
+        {
+            get => neighbor;
+            set => neighbor = value;
+        }
+
+        private double scaler = 1;
+
+        public double Scaler
+        {
+            get
+            {
+                return scaler;
+            }
+            set
+            {
+                scaler = value;
+            }
+        }
+
+        private double radius;
 
         public double Radius
         {
@@ -103,25 +124,15 @@ namespace FluidSimulation
             }
         }
 
+        public double Diameter => radius * 2;
+
         private Vector position = new Vector(0, 0);
 
         public Vector Position => this.position;
-        public bool IsSolid = false;
-        public void SetPosition(double x, double y)
-        {
-            position.X = x/10;
-            position.Y = y/10;
 
-            Canvas.SetLeft(this, x-this.radius);
-            Canvas.SetBottom(this, y-this.radius);
-        }
+        private bool isSolid = false;
 
-        public void SetPosition(Vector vector)
-        {
-            position = vector/10;
-            Canvas.SetLeft(this, vector.X - this.radius);
-            Canvas.SetBottom(this, vector.Y - this.radius);
-        }
+        public bool IsSolid => this.isSolid;
 
         public Vector velocity = new Vector(0, 0);
 
@@ -153,38 +164,71 @@ namespace FluidSimulation
             }
         }
 
-        public Vector NextPosition;
+        private double lambdaMultipiler = 0;
+
+        public double LambdaMultiplier
+        {
+            get => lambdaMultipiler;
+            set => lambdaMultipiler = value;
+        }
+
+        private Vector offsetPos = new Vector();
+
+        public Vector OffsetPos
+        {
+            get => offsetPos;
+            set => offsetPos = value;
+        }
+
+        public double property = 0.0f;
+
+        private double mass = 1;
+
+        public double Mass
+        {
+            get => mass;
+
+            set => mass = value;
+        }
+
+        private Vector nextPosition;
+
+        public Vector NextPosition
+        {
+            get => nextPosition;
+            set => nextPosition = value;
+        }
+
+        public Particle(double x, double y, double radius=2.5)
+        {
+            position.X = x;
+            position.Y = y;
+            this.radius = radius;
+            this._rect = new Rect(new Size(this.Diameter, this.Diameter));
+        }
+
+        public void SetPosition(double x, double y)
+        {
+            position.X = x/10;
+            position.Y = y/10;
+
+            Canvas.SetLeft(this, x-this.radius);
+            Canvas.SetBottom(this, y-this.radius);
+        }
+
+        public void SetPosition(Vector vector)
+        {
+            position = vector/10;
+            Canvas.SetLeft(this, vector.X - this.radius);
+            Canvas.SetBottom(this, vector.Y - this.radius);
+        }
+
         public void PredictPosition(double time)
         {
             // 因为目前只有重力, 后面需要有其他力对速度进行修正
             velocity += force * time;
             var posOffset = velocity * time;
-            // Next position offset
             NextPosition = this.position + posOffset;
         }
-
-        public Rect GetCollideShape()
-        {
-            // 这里需要返回一个碰撞矩形
-            Rect rect = new Rect();
-
-            // 左下为坐标系原点
-            // xy 就是中心原点, 高宽就是半径
-
-            rect.Width = this.radius;
-            rect.Height = this.radius;
-
-            return rect;
-        }
-
-        public double lambda_multiplyer = 0;
-
-        public bool IsMovable()
-        {
-            return true;
-        }
-
-        public Vector Delt_p = new Vector();
-        public double property = 0.0f;
     }
 }
