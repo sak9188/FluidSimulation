@@ -134,7 +134,7 @@ namespace FluidSimulation2
 
         public bool IsSolid => this.isSolid;
 
-        public Vector velocity = new Vector(0, 0);
+        private Vector velocity = new Vector(0, 0);
 
         public Vector Velocity
         {
@@ -180,8 +180,6 @@ namespace FluidSimulation2
             set => offsetPos = value;
         }
 
-        public double property = 0.0f;
-
         private double mass = 1;
 
         public double Mass
@@ -189,6 +187,11 @@ namespace FluidSimulation2
             get => mass;
 
             set => mass = value;
+        }
+
+        public double Density
+        {
+            get => Mass / (Math.PI * Math.Pow(radius, 2));
         }
 
         private Vector nextPosition;

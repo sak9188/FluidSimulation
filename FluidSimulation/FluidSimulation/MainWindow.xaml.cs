@@ -347,9 +347,9 @@ namespace FluidSimulation
 
                 //Console.WriteLine( "CurParticleIndex:{0}", particle.index);
                 HashSet<Particle> allJoinParticles = new HashSet<Particle>();
-                for (int i = 0; i < 3; i++)
+                for (int i = -1; i < 2; i++)
                 {
-                    for (int j = 0; j < 3; j++)
+                    for (int j = -1; j < 2; j++)
                     {
                         HashSet<Particle> hashSet;
                         if (SpaceDict.TryGetValue(xGridPos + j + (yGridPos + i) * 8, out hashSet))
