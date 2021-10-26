@@ -35,9 +35,19 @@ namespace FluidSimulation2
 
         private static double kernelRadius = diameter * 2;
 
-        private static double solidDensity
+        private static double solidMass = 2;
+
+        private static double solidDensity = solidMass / Math.PI / Math.Pow(radius, 2);
+
+        private static double fluidMass = 1;
+
+        private static double fluidDensity = fluidMass / Math.PI / Math.Pow(radius, 2);
+
+        private static double relaxScaler = 0.001;
 
         private readonly int maxIteration = 5;
+
+        private readonly double k_small_positive = 0.001;
 
         private KernelFunction function = new KernelFunction(kernelRadius);
 
@@ -69,7 +79,7 @@ namespace FluidSimulation2
             return 0;
         }
 
-        private void Solver()
+        private void Solver(double timeStep)
         {
             foreach (var particle in allParticles)
             {
@@ -82,7 +92,71 @@ namespace FluidSimulation2
                     rol_i += particle.Mass * value;
                 }
 
-                var c_i = rol_i / 
+                var c_i = rol_i / fluidDensity - 1;
+
+                if (c_i > 0)
+                {
+                    Vector grad_i = new Vector();
+                    double sum_grad_j = 0;
+
+                    foreach (var neiborParticle in particle.Neighbor)
+                    {
+                        Vector grad_j = neiborParticle.Mass / fluidDensity * function.SpikyGrad(
+                            particle.NextPosition - neiborParticle.NextPosition, kernelRadius);
+
+                        grad_i += grad_j;
+                        sum_grad_j += Math.Pow((-grad_j).Length, 2);
+                    }
+
+                    sum_grad_j += Math.Pow(grad_i.Length, 2);
+                    particle.LambdaMultiplier = -c_i / (sum_grad_j + relaxScaler);
+                }
+                else
+                {
+                    particle.LambdaMultiplier = 0;
+                }
+            }
+
+            foreach (var particle in fluidParticle)
+            {
+                if(particle.LambdaMultiplier == 0)
+                    continue;
+
+                Vector det_p = new Vector();
+
+                foreach (var particle1 in particle.Neighbor)
+                {
+                    double scorr = -k_small_positive * Math.Pow(
+                        function.Spiky(particle.NextPosition - particle1.NextPosition, kernelRadius)
+                        / function.Spiky(0.2 * kernelRadius, kernelRadius), 4);
+
+                    det_p += (particle.LambdaMultiplier + particle1.LambdaMultiplier + scorr) *
+                             function.SpikyGrad(particle.NextPosition - particle1.NextPosition, kernelRadius);
+                }
+
+                particle.OffsetPos = det_p / fluidDensity;
+            }
+
+            foreach (var particle in fluidParticle)
+            {
+                particle.NextPosition += particle.OffsetPos;
+                particle.OffsetPos = new Vector();
+            }
+
+            foreach (var particle in fluidParticle)
+            {
+                particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
+                
+                // 粘度
+                Vector vij;
+                Vector sum = new Vector();
+                foreach (var particle1 in particle.Neighbor)
+                {
+                    vij = particle1.Velocity - particle.Velocity;
+                    vij *= function.Spiky(particle.NextPosition - particle1.NextPosition, kernelRadius) * 0.01;
+                    sum += vij;
+                }
+                particle.Velocity += sum;
             }
         }
 
