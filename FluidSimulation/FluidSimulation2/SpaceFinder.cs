@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace FluidSimulation2
 {
@@ -10,6 +11,7 @@ namespace FluidSimulation2
     {
         private double width;
         private double height;
+        private int rowNum;
         private double step;
         private double radius;
 
@@ -23,11 +25,31 @@ namespace FluidSimulation2
             this.height = height;
             this.step = singleStep;
             this.radius = kernelRadius;
+            this.rowNum = Convert.ToInt32(width / singleStep);
+        }
+
+        private int GetKey(Vector position)
+        {
+            var xPos = Convert.ToInt32(position.X / this.step);
+            var yPos = Convert.ToInt32(position.Y / this.step);
+
+            return xPos + yPos * rowNum;
         }
 
         public void ManageParticle(Particle particle)
         {
             particles.Add(particle);
+
+            var key = GetKey(particle.Position);
+            HashSet<Particle> set;
+            if(spaceDict.TryGetValue(key, out set))
+            {
+                set.Add(particle);
+            }
+            else
+            {
+                spaceDict[key] = new HashSet<Particle>() {particle};
+            }
         }
 
         public void FindAllNeighbor()
@@ -50,8 +72,8 @@ namespace FluidSimulation2
                                 if(particle1 == particle)
                                     continue;
 
-                                // TODO 这里可能存在一个埃普西隆的误差
-                                if ((particle1.NextPosition - particle1.NextPosition).Length <= this.radius)
+                                // 这里算出来的向量的长度会有误差，所以这里需要计算两者之间的差
+                                if (Math.Abs((particle1.NextPosition - particle1.NextPosition).Length - this.radius) <= 0.01)
                                 {
                                     adjoin.Add(particle1);
                                 }
@@ -62,6 +84,12 @@ namespace FluidSimulation2
 
                 particle.Neighbor = adjoin;
             }
+        }
+
+        public void UpdatePosition(Particle updateParticle)
+        {
+            // 更新所有的位置信息
+
         }
     }
 }

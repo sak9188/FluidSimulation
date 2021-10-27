@@ -30,7 +30,20 @@ namespace FluidSimulation2
 
         private Vector maxSpeed = new Vector();
 
-        private static double radius = 0.3;
+        private static readonly int scaler = 10;
+
+        private static readonly double canvasWidth = 800;
+
+        private static readonly double realWidth = canvasWidth / scaler;
+
+        private static readonly double canvasHeight = 800;
+
+        private static readonly double realHeight = canvasHeight / scaler;
+
+        private static readonly double spaceStep = 10;
+
+        private static double radius = 0.2;
+
         private static double diameter => radius * 2;
 
         private static double kernelRadius = diameter * 2;
@@ -45,15 +58,32 @@ namespace FluidSimulation2
 
         private static double relaxScaler = 0.001;
 
-        private readonly int maxIteration = 5;
+        private readonly int maxIteration = 3;
 
         private readonly double k_small_positive = 0.001;
 
+        private readonly int particleNum = 10;
+
+        private readonly Vector gravity = new Vector(0, -9.8d);
+
+        private int index = 0;
+
         private KernelFunction function = new KernelFunction(kernelRadius);
+
+        private SpaceFinder space = new SpaceFinder(realWidth, realHeight, spaceStep/scaler ,kernelRadius);
+
 
         public MainWindow()
         {
             InitializeComponent();
+            
+            // 手动设置这个高宽
+            DrawCanvas.Width = canvasWidth;
+            DrawCanvas.Height = canvasHeight;
+
+            // 设置窗体的高宽
+            this.Width = canvasWidth + 20;
+            this.Height = canvasHeight + 45;
 
             InitParticles();
 
@@ -64,14 +94,143 @@ namespace FluidSimulation2
 
         private void InitParticles()
         {
-            // 初始化粒子
+            // 初始化粒子的位置
+            double x = 10, y = 10;
+            
+            // 初始化流体粒子
+            for (int i = 0; i < particleNum; i++)
+            {
+                x = 10;
+                for (int j = 0; j < particleNum; j++)
+                {
+                    var p = new Particle(x, y, scaler, radius)
+                    {
+                        Fill = Brushes.DarkKhaki,
+                        Index = index++,
+                        Force = gravity,
+                        Mass = fluidMass,
+                    };
+                    p.Index = index++;
+                    allParticles.Add(p);
+                    space.ManageParticle(p);
+                    x += diameter;
 
+                    DrawCanvas.Children.Add(p);
+                }
+                y += diameter;
+            }
+            
+            // 初始化边界固体粒子
             InitBoundaries();
+
+            // 计算固体粒子的质量
+
         }
 
         private void InitBoundaries()
         {
             // 初始化边界
+            // 加入边界粒子
+            double x = 0;
+            double y = radius;
+
+            // Bottom
+            for (int i = 0; i < 2; i++)
+            {
+                x = diameter * 2.5;
+                for (int j = 0; j < (realWidth - diameter * 4) / diameter; j++)
+                {
+                    var p = new Particle(x, y, scaler, radius)
+                    {
+                        Fill = Brushes.Black,
+                        IsSolid = true,
+                        Index = index++,
+                        Mass = solidMass
+                    };
+
+                    allParticles.Add(p);
+                    solidParticle.Add(p);
+                    space.ManageParticle(p);
+                    DrawCanvas.Children.Add(p);
+
+                    x += diameter;
+                }
+                y += diameter;
+            }
+
+            // Top
+            y = realHeight - radius;
+            for (int i = 0; i < 2; i++)
+            {
+                x = diameter * 2.5;
+                for (int j = 0; j < (realWidth - diameter * 4) / diameter; j++)
+                {
+                    var p = new Particle(x, y, scaler, radius)
+                    {
+                        Fill = Brushes.Black,
+                        IsSolid = true,
+                        Index = index++,
+                        Mass = solidMass
+                    };
+
+                    allParticles.Add(p);
+                    solidParticle.Add(p);
+                    space.ManageParticle(p);
+                    DrawCanvas.Children.Add(p);
+
+                    x += diameter;
+                }
+                y -= diameter;
+            }
+
+            // Left
+            y = radius;
+            for (int i = 0; i < 2; i++)
+            {
+                x = radius;
+                for (int j = 0; j < realHeight / diameter; j++)
+                {
+                    var p = new Particle(y, x, scaler, radius)
+                    {
+                        Fill = Brushes.Black,
+                        IsSolid = true,
+                        Index = index++,
+                        Mass = solidMass
+                    };
+
+                    allParticles.Add(p);
+                    solidParticle.Add(p);
+                    space.ManageParticle(p);
+                    DrawCanvas.Children.Add(p);
+                    x += diameter;
+                }
+                y += diameter;
+            }
+
+            // Right
+            y = realWidth - radius;
+            for (int i = 0; i < 2; i++)
+            {
+                x = radius;
+                for (int j = 0; j < realHeight / diameter; j++)
+                {
+                    var p = new Particle(y, x, scaler, radius)
+                    {
+                        Fill = Brushes.Black,
+                        IsSolid = true,
+                        Index = index++,
+                        Mass = solidMass
+                    };
+
+                    allParticles.Add(p);
+                    solidParticle.Add(p);
+                    space.ManageParticle(p);
+                    DrawCanvas.Children.Add(p);
+
+                    x += diameter;
+                }
+                y -= diameter;
+            }
         }
 
         private double GetTheMaxTimeStep(double minTime, double maxTime)
@@ -79,7 +238,7 @@ namespace FluidSimulation2
             return 0;
         }
 
-        private void Solver(double timeStep)
+        private void Solver()
         {
             foreach (var particle in allParticles)
             {
@@ -143,21 +302,6 @@ namespace FluidSimulation2
                 particle.OffsetPos = new Vector();
             }
 
-            foreach (var particle in fluidParticle)
-            {
-                particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
-                
-                // 粘度
-                Vector vij;
-                Vector sum = new Vector();
-                foreach (var particle1 in particle.Neighbor)
-                {
-                    vij = particle1.Velocity - particle.Velocity;
-                    vij *= function.Spiky(particle.NextPosition - particle1.NextPosition, kernelRadius) * 0.01;
-                    sum += vij;
-                }
-                particle.Velocity += sum;
-            }
         }
 
         public void TimeStep(object sender, EventArgs e)
@@ -185,12 +329,28 @@ namespace FluidSimulation2
                Solver(); 
             }
 
-            foreach (var particle in allParticles)
+            foreach (var particle in fluidParticle)
             {
-                // 更新速度
                 particle.Velocity = (particle.NextPosition - particle.Position) / timeStep;
-                // 加入旋度
-                // 加入粘度
+                
+                // 粘度
+                Vector vij;
+                Vector sum = new Vector();
+                foreach (var particle1 in particle.Neighbor)
+                {
+                    vij = particle1.Velocity - particle.Velocity;
+                    vij *= function.Spiky(particle.NextPosition - particle1.NextPosition, kernelRadius) * 0.01;
+                    sum += vij;
+                }
+                particle.Velocity += sum;
+            }
+
+            foreach (var particle in fluidParticle)
+            {
+                particle.SetPosition(particle.NextPosition);
+
+                // 对空间中间的粒子进行更新
+                space.UpdatePosition(particle);
             }
 
             drawTimer.Start();

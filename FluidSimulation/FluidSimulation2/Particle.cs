@@ -132,7 +132,18 @@ namespace FluidSimulation2
 
         private bool isSolid = false;
 
-        public bool IsSolid => this.isSolid;
+        public bool IsSolid
+        {
+            get
+            {
+                return isSolid;
+            }
+
+            set
+            {
+                isSolid = value;
+            }
+        }
 
         private Vector velocity = new Vector(0, 0);
 
@@ -202,28 +213,33 @@ namespace FluidSimulation2
             set => nextPosition = value;
         }
 
-        public Particle(double x, double y, double radius=2.5)
+        public Particle(double x, double y, int scaler, double radius=2.5)
         {
             position.X = x;
             position.Y = y;
             this.radius = radius;
-            this._rect = new Rect(new Size(this.Diameter, this.Diameter));
+            this.scaler = scaler;
+            this._rect = new Rect(new Size(this.Diameter * scaler, this.Diameter * scaler));
+            SetPosition(x, y);
         }
 
         public void SetPosition(double x, double y)
         {
-            position.X = x/10;
-            position.Y = y/10;
-
-            Canvas.SetLeft(this, x-this.radius);
-            Canvas.SetBottom(this, y-this.radius);
+            position.X = x;
+            position.Y = y;
+            _SetPosition(position.X, position.Y);
         }
 
         public void SetPosition(Vector vector)
         {
-            position = vector/10;
-            Canvas.SetLeft(this, vector.X - this.radius);
-            Canvas.SetBottom(this, vector.Y - this.radius);
+            position = vector;
+            _SetPosition(position.X, position.Y);
+        }
+
+        private void _SetPosition(double x, double y)
+        {
+            Canvas.SetLeft(this, (x - this.radius) * scaler);
+            Canvas.SetBottom(this, (y + this.radius) * scaler);
         }
 
         public void PredictPosition(double time)
