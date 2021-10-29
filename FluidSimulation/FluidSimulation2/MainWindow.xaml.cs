@@ -62,7 +62,7 @@ namespace FluidSimulation2
 
         private static readonly double k_small_positive = 0.001;
 
-        private static readonly int particleNum = 10;
+        private static readonly int particleNum = 5;
 
         private static readonly Vector gravity = new Vector(0, -9.8d);
 
@@ -112,6 +112,7 @@ namespace FluidSimulation2
                     };
                     p.Index = index++;
                     allParticles.Add(p);
+                    fluidParticle.Add(p);
                     space.ManageParticle(p);
                     x += diameter;
 
@@ -123,7 +124,25 @@ namespace FluidSimulation2
             // 初始化边界固体粒子
             InitBoundaries();
 
-            // 计算固体粒子的质量
+            // 因为需要计算固体粒子的影响，这里需要计算邻近粒子
+            space.FindAllNeighbor();
+
+            // 计算固体粒子的影响
+            foreach (var particle in solidParticle)
+            {
+                var mass = fluidDensity * solidMass;
+                var sum_mass = function.Poly6(0, kernelRadius);
+                foreach (var particle1 in particle.Neighbor)
+                {
+                    if(!particle1.IsSolid)
+                        continue;
+
+                    sum_mass += solidMass * function.Poly6(particle.Position - particle1.Position, kernelRadius);
+                }
+
+                // 这里是伪质量
+                particle.Mass = mass / sum_mass;
+            }
 
         }
 
@@ -318,7 +337,7 @@ namespace FluidSimulation2
         {
             drawTimer.Stop();
 
-            double timeStep = GetTheMaxTimeStep(0.16, 0.016);
+            double timeStep = GetTheMaxTimeStep(0.016, 0.0016);
 
             foreach (var particle in allParticles)
             {
@@ -359,10 +378,10 @@ namespace FluidSimulation2
 
             foreach (var particle in fluidParticle)
             {
-                particle.SetPosition(particle.NextPosition);
-
                 // 对空间中间的粒子进行更新
                 space.UpdatePosition(particle);
+
+                particle.SetPosition(particle.NextPosition);
             }
 
             drawTimer.Start();

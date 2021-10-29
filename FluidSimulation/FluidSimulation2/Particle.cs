@@ -62,13 +62,13 @@ namespace FluidSimulation2
                 return;
             Pen pen = this.GetPen();
             drawingContext.DrawGeometry(this.Fill, pen, (Geometry) new EllipseGeometry(this._rect));
-            drawingContext.DrawText(
-               new FormattedText(this.index.ToString(),
-                  CultureInfo.GetCultureInfo("en-us"),
-                  FlowDirection.LeftToRight,
-                  new Typeface("Microsoft Yahei"),
-                  this.Diameter, Brushes.Black),
-                  new Point(_rect.X, _rect.Y));
+            //drawingContext.DrawText(
+            //   new FormattedText(this.index.ToString(),
+            //      CultureInfo.GetCultureInfo("en-us"),
+            //      FlowDirection.LeftToRight,
+            //      new Typeface("Microsoft Yahei"),
+            //      this.Diameter, Brushes.Black),
+            //      new Point(_rect.X, _rect.Y));
 
         }
 
@@ -203,6 +203,22 @@ namespace FluidSimulation2
         public double Density
         {
             get => Mass / (Math.PI * Math.Pow(radius, 2));
+        }
+
+        // 这里是固体粒子特有的属性
+        private double property = 0;
+
+        public double Property
+        {
+            get
+            {
+                return property;
+            }
+
+            set
+            {
+                property = value;
+            }
         }
 
         private Vector nextPosition;

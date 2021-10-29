@@ -73,7 +73,8 @@ namespace FluidSimulation2
                                     continue;
 
                                 // 这里算出来的向量的长度会有误差，所以这里需要计算两者之间的差
-                                if (Math.Abs((particle.NextPosition - particle1.NextPosition).Length - this.radius) <= 0.01)
+                                // TODO 这里算错了
+                                if (((particle.NextPosition - particle1.NextPosition).Length - this.radius) <= 0.01)
                                 {
                                     adjoin.Add(particle1);
                                 }
