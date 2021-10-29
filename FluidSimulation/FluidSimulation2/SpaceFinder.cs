@@ -15,7 +15,7 @@ namespace FluidSimulation2
         private double step;
         private double radius;
 
-        private List<Particle> particles = new List<Particle>();
+        private HashSet<Particle> particles = new HashSet<Particle>();
 
         private Dictionary<int, HashSet<Particle>> spaceDict = new Dictionary<int, HashSet<Particle>>();
 
@@ -65,7 +65,7 @@ namespace FluidSimulation2
                     for (int j = -1 ; j < 2; j++)
                     {
                         HashSet<Particle> hashSet;
-                        if(spaceDict.TryGetValue(xGridPos + j + (yGridPos + i) * 8, out hashSet))
+                        if(spaceDict.TryGetValue(xGridPos + j + (yGridPos + i) * rowNum, out hashSet))
                         {
                             foreach (var particle1 in hashSet)
                             {
@@ -73,7 +73,7 @@ namespace FluidSimulation2
                                     continue;
 
                                 // 这里算出来的向量的长度会有误差，所以这里需要计算两者之间的差
-                                if (Math.Abs((particle1.NextPosition - particle1.NextPosition).Length - this.radius) <= 0.01)
+                                if (Math.Abs((particle.NextPosition - particle1.NextPosition).Length - this.radius) <= 0.01)
                                 {
                                     adjoin.Add(particle1);
                                 }
@@ -86,10 +86,33 @@ namespace FluidSimulation2
             }
         }
 
-        public void UpdatePosition(Particle updateParticle)
+        public void UpdatePosition(Particle particle)
         {
             // 更新所有的位置信息
+            if (!particles.Contains(particle))
+            { 
+                return;
+            }
+
+            var oldKey = GetKey(particle.Position);
+            var newKey = GetKey(particle.NextPosition);
+
+            if (oldKey != newKey)
+            {
+                var treeSet = spaceDict[oldKey];
+                treeSet.Remove(particle);
+
+                HashSet<Particle> set;
+                if (spaceDict.TryGetValue(newKey, out set))
+                {
+                    set.Add(particle);
+                }
+                else
+                {
+                    spaceDict[newKey] = new HashSet<Particle>() { particle };
+                }
+            }
 
         }
     }
-}
+} 

@@ -318,7 +318,7 @@ namespace FluidSimulation2
         {
             drawTimer.Stop();
 
-            double timeStep = GetTheMaxTimeStep(0.016, 0.0016);
+            double timeStep = GetTheMaxTimeStep(0.16, 0.016);
 
             foreach (var particle in allParticles)
             {
@@ -333,6 +333,8 @@ namespace FluidSimulation2
                     maxSpeed = particle.Velocity;
                 }
             }
+
+            space.FindAllNeighbor();
 
             for (int i = 0; i < maxIteration; i++)
             {
