@@ -42,29 +42,29 @@ namespace FluidSimulation2
 
         private static readonly double spaceStep = 10;
 
-        private static double radius = 0.2;
+        private static readonly double radius = 0.2;
 
         private static double diameter => radius * 2;
 
-        private static double kernelRadius = diameter * 2;
+        private static readonly double kernelRadius = diameter * 2;
 
-        private static double solidMass = 2;
+        private static readonly double solidMass = 2;
 
-        private static double solidDensity = solidMass / Math.PI / Math.Pow(radius, 2);
+        private static readonly double solidDensity = solidMass / Math.PI / Math.Pow(radius, 2);
 
-        private static double fluidMass = 1;
+        private static readonly double fluidMass = 1;
 
-        private static double fluidDensity = fluidMass / Math.PI / Math.Pow(radius, 2);
+        private static readonly double fluidDensity = fluidMass / Math.PI / Math.Pow(radius, 2);
 
-        private static double relaxScaler = 0.001;
+        private static readonly double relaxScaler = 0.001;
 
-        private readonly int maxIteration = 3;
+        private static readonly int maxIteration = 3;
 
-        private readonly double k_small_positive = 0.001;
+        private static readonly double k_small_positive = 0.001;
 
-        private readonly int particleNum = 10;
+        private static readonly int particleNum = 10;
 
-        private readonly Vector gravity = new Vector(0, -9.8d);
+        private static readonly Vector gravity = new Vector(0, -9.8d);
 
         private int index = 0;
 
@@ -235,7 +235,17 @@ namespace FluidSimulation2
 
         private double GetTheMaxTimeStep(double minTime, double maxTime)
         {
-            return 0;
+            // 这里使用的CFL方法
+            if (maxSpeed.Length <= 0)
+            {
+                return maxTime;
+            }
+
+            double timeStep = diameter * 5 / maxSpeed.Length;
+            timeStep = Math.Min(timeStep, maxTime);
+            timeStep = Math.Max(timeStep, minTime);
+
+            return timeStep;
         }
 
         private void Solver()
