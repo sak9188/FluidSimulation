@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="550" Width="550">
     <Grid>
-        <Canvas Name="DrawCanvas" Background="CadetBlue"></Canvas> 
+        <Canvas Name="DrawCanvas" Background="CadetBlue">
+            <Button Canvas.Right="10" Canvas.Top="10" Width="30" Height="30" Click="ButtonBase_OnClick">开始</Button>
+        </Canvas> 
     </Grid>
 </Window>

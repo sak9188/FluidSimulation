@@ -48,21 +48,23 @@ namespace FluidSimulation2
 
         private static readonly double kernelRadius = diameter * 2;
 
-        private static readonly double solidMass = 2;
+        private static readonly double volume = Math.PI * Math.Pow(radius, 2);
 
-        private static readonly double solidDensity = solidMass / Math.PI / Math.Pow(radius, 2);
+        private static readonly double solidDensity = 90;
 
-        private static readonly double fluidMass = 1;
+        private static readonly double solidMass = volume * solidDensity;
 
-        private static readonly double fluidDensity = fluidMass / Math.PI / Math.Pow(radius, 2);
+        private static readonly double fluidDensity = 10;
+
+        private static readonly double fluidMass = volume * fluidDensity;
 
         private static readonly double relaxScaler = 0.001;
 
-        private static readonly int maxIteration = 3;
+        private static readonly int maxIteration = 5;
 
         private static readonly double k_small_positive = 0.001;
 
-        private static readonly int particleNum = 5;
+        private static readonly int particleNum = 50;
 
         private static readonly Vector gravity = new Vector(0, -9.8d);
 
@@ -87,9 +89,7 @@ namespace FluidSimulation2
 
             InitParticles();
 
-            drawTimer.Tick += TimeStep;
-            drawTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
-            drawTimer.Start();
+
         }
 
         private void InitParticles()
@@ -154,7 +154,7 @@ namespace FluidSimulation2
             double y = radius;
 
             // Bottom
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 x = diameter * 2.5;
                 for (int j = 0; j < (realWidth - diameter * 4) / diameter; j++)
@@ -167,6 +167,8 @@ namespace FluidSimulation2
                         Mass = solidMass
                     };
 
+                    p.NextPosition = p.Position;
+
                     allParticles.Add(p);
                     solidParticle.Add(p);
                     space.ManageParticle(p);
@@ -174,12 +176,12 @@ namespace FluidSimulation2
 
                     x += diameter;
                 }
-                y += diameter;
+                y += diameter * 0.33;
             }
 
             // Top
             y = realHeight - radius;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 x = diameter * 2.5;
                 for (int j = 0; j < (realWidth - diameter * 4) / diameter; j++)
@@ -192,6 +194,8 @@ namespace FluidSimulation2
                         Mass = solidMass
                     };
 
+                    p.NextPosition = p.Position;
+
                     allParticles.Add(p);
                     solidParticle.Add(p);
                     space.ManageParticle(p);
@@ -199,12 +203,12 @@ namespace FluidSimulation2
 
                     x += diameter;
                 }
-                y -= diameter;
+                y -= diameter * 0.33;
             }
 
             // Left
             y = radius;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 x = radius;
                 for (int j = 0; j < realHeight / diameter; j++)
@@ -217,18 +221,20 @@ namespace FluidSimulation2
                         Mass = solidMass
                     };
 
+                    p.NextPosition = p.Position;
+
                     allParticles.Add(p);
                     solidParticle.Add(p);
                     space.ManageParticle(p);
                     DrawCanvas.Children.Add(p);
                     x += diameter;
                 }
-                y += diameter;
+                y += diameter * 0.33;
             }
 
             // Right
             y = realWidth - radius;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 x = radius;
                 for (int j = 0; j < realHeight / diameter; j++)
@@ -241,6 +247,8 @@ namespace FluidSimulation2
                         Mass = solidMass
                     };
 
+                    p.NextPosition = p.Position;
+
                     allParticles.Add(p);
                     solidParticle.Add(p);
                     space.ManageParticle(p);
@@ -248,7 +256,7 @@ namespace FluidSimulation2
 
                     x += diameter;
                 }
-                y -= diameter;
+                y -= diameter * 0.33;
             }
         }
 
@@ -275,6 +283,10 @@ namespace FluidSimulation2
                 double rol_i = 0;
                 foreach (var particleNeighbor in particle.Neighbor)
                 {
+                    if (!particle.IsSolid)
+                    {
+                        int t = 0;
+                    }
                     var value = function.Poly6(particle.NextPosition - particleNeighbor.NextPosition, kernelRadius);
 
                     rol_i += particle.Mass * value;
@@ -316,7 +328,7 @@ namespace FluidSimulation2
                 {
                     double scorr = -k_small_positive * Math.Pow(
                         function.Spiky(particle.NextPosition - particle1.NextPosition, kernelRadius)
-                        / function.Spiky(0.2 * kernelRadius, kernelRadius), 4);
+                        / function.Spiky(0.25 * kernelRadius, kernelRadius), 4);
 
                     det_p += (particle.LambdaMultiplier + particle1.LambdaMultiplier + scorr) *
                              function.SpikyGrad(particle.NextPosition - particle1.NextPosition, kernelRadius);
@@ -327,6 +339,9 @@ namespace FluidSimulation2
 
             foreach (var particle in fluidParticle)
             {
+                if(particle.OffsetPos.Length <= 0)
+                    continue;
+
                 particle.NextPosition += particle.OffsetPos;
                 particle.OffsetPos = new Vector();
             }
@@ -337,28 +352,21 @@ namespace FluidSimulation2
         {
             drawTimer.Stop();
 
-            double timeStep = GetTheMaxTimeStep(0.016, 0.0016);
+            double timeStep = GetTheMaxTimeStep(0.016, 0.0005);
 
-            foreach (var particle in allParticles)
+            foreach (var particle in fluidParticle)
             {
                 particle.PredictPosition(timeStep);
-                if (particle.IsSolid)
-                {
-                    continue;
-                }
-
-                if (particle.Velocity.Length > maxSpeed.Length)
-                {
-                    maxSpeed = particle.Velocity;
-                }
             }
 
             space.FindAllNeighbor();
 
             for (int i = 0; i < maxIteration; i++)
             {
-               Solver(); 
+               Solver();
             }
+
+            maxSpeed = new Vector();
 
             foreach (var particle in fluidParticle)
             {
@@ -374,6 +382,11 @@ namespace FluidSimulation2
                     sum += vij;
                 }
                 particle.Velocity += sum;
+
+                if (particle.Velocity.Length > maxSpeed.Length)
+                {
+                    maxSpeed = particle.Velocity;
+                }
             }
 
             foreach (var particle in fluidParticle)
@@ -387,5 +400,14 @@ namespace FluidSimulation2
             drawTimer.Start();
         }
 
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+            button.Visibility = Visibility.Hidden;
+            
+            drawTimer.Tick += TimeStep;
+            drawTimer.Interval = new TimeSpan(0, 0, 0, 0, 5);
+            drawTimer.Start();
+        }
     }
 }
